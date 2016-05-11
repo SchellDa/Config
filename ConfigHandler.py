@@ -5,7 +5,6 @@ from ConfigParser import ConfigParser
 class CfgHandler(ConfigParser):
 
     def __init__(self, parDict = None):
-
         ConfigParser.__init__(self)
         self.__dir = "cfg/"
         self.__prmtr = None     
@@ -15,55 +14,6 @@ class CfgHandler(ConfigParser):
     def __cfgExists(self):
         return os.path.exists(self.__cfg)
     
-    def init(self, fullDict):        
-
-        if isinstance(fullDict,dict):
-        #TODO: Check if val of key is dict
-            self.__prmtr = fullDict
-            
-    def getDict(self, sec):
-        
-        if self.__prmtr is not None:
-        # TODO Try-Except
-            return self.__prmtr[sec]
-        # sys.exit("Section: %s not defined" %sec)
-        
-    def getParameters(self):
-        return self.__prmtr
-
-    def get(self, sec, par):
-        
-        if self.__prmtr is not None:
-            return self.__prmtr[sec][par]
-
-    def setDir(self, dirName="cfg/"):
-        self.__dir = dirName
-
-    def setNoDir(self):
-        self.__dir = ""
-        
-    def write(self, cfg='config.cfg', owrite=True):
-
-        #TODO: Add overwrite part
-        
-        if not os.path.isdir(self.__dir):
-            os.makedirs(self.__dir)
-        else:
-            pass
-
-        with open(self.__dir + cfg,'w') as cfgFile:
-            if self.__prmtr is not None:
-                for sec in self.__prmtr:
-                    self.add_section(sec)
-                    for key in self.__prmtr[sec]:
-                        self.set(sec,key,self.__prmtr[sec][key])
-            ConfigParser.write(self,cfgFile)
-
-            
-    def load(self,cfg='config.cfg'):
-
-        self.__prmtr = self.__load(cfg)
-        
     def __load(self, cfg='config.cfg'):
 
         if os.path.exists(self.__dir + cfg):
@@ -82,16 +32,59 @@ class CfgHandler(ConfigParser):
             sys.exit("No cfg found!")
 
         return fullDict
-    
 
-    def update(self, cfg='config.cfg'):
-
-        tmpDict = self.__load(self.__dir + cfg)
-        
+    def get(self, sec, par):
+        if self.__prmtr is not None:
+            return self.__prmtr[sec][par]
             
+    def getDict(self, sec):
+        if self.__prmtr is not None:
+        # TODO Try-Except
+            return self.__prmtr[sec]
+        # sys.exit("Section: %s not defined" %sec)
+        
+    def getParameters(self):
+        return self.__prmtr
+
+    def init(self, fullDict):                    
+        if isinstance(fullDict,dict):
+        #TODO: Check if val of key is dict
+            self.__prmtr = fullDict
+
+    def load(self,cfg='config.cfg'):
+        self.__prmtr = self.__load(cfg)
+
+    def setDir(self, dirName="cfg/"):
+        self.__dir = dirName
+
+    def setNoDir(self):
+        self.__dir = ""
+        
+    def write(self, cfg='config.cfg', owrite=True):
+        #TODO: Add overwrite part
+        
+        if not os.path.isdir(self.__dir):
+            os.makedirs(self.__dir)
+        else:
+            pass
+
+        with open(self.__dir + cfg,'w') as cfgFile:
+            if self.__prmtr is not None:
+                for sec in self.__prmtr:
+                    self.add_section(sec)
+                    for key in self.__prmtr[sec]:
+                        self.set(sec,key,self.__prmtr[sec][key])
+            ConfigParser.write(self,cfgFile)
+                        
+    def update(self, cfg='config.cfg'):
+        tmpDict = self.__load(self.__dir + cfg)
+
+        #TODO compare tmpDict with self.__prmtr
+
+        
 if __name__ == '__main__':        
 
-    write = False
+    write = True
     
     pDict = {'General':{'vad_file':'VAD',
                         'vdd_file':'VDD',
@@ -99,7 +92,10 @@ if __name__ == '__main__':
                         'path':'/mnt/1-wire/honeywell/'},
              'Special':{'d':4,
                         'e':5,
-                        'f':6}}
+                        'f':6},
+             'More':{'g':7,
+                     'h':8,
+                     'i':9}}
 
     cfg = CfgHandler()
     

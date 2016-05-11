@@ -5,7 +5,9 @@ from ConfigParser import ConfigParser
 class CfgHandler(ConfigParser):
 
     def __init__(self, parDict = None):
-        self.__prs = ConfigParser()
+
+        ConfigParser.__init__(self)
+        self.__dir = "cfg/"
         self.__prmtr = None     
         if parDict is not None:
             self.init(parDict)
@@ -33,32 +35,59 @@ class CfgHandler(ConfigParser):
         
         if self.__prmtr is not None:
             return self.__prmtr[sec][par]
-            
-            
-    def write(self, fName='config.cfg'):
 
-        with open(fName,'w') as cfgFile:
+    def setDir(self, dirName="cfg/"):
+        self.__dir = dirName
+
+    def setNoDir(self):
+        self.__dir = ""
+        
+    def write(self, cfg='config.cfg', owrite=True):
+
+        #TODO: Add overwrite part
+        
+        if not os.path.isdir(self.__dir):
+            os.makedirs(self.__dir)
+        else:
+            pass
+
+        with open(self.__dir + cfg,'w') as cfgFile:
             if self.__prmtr is not None:
                 for sec in self.__prmtr:
-                    self.__prs.add_section(sec)
+                    self.add_section(sec)
                     for key in self.__prmtr[sec]:
-                        self.__prs.set(sec,key,self.__prmtr[sec][key])
-            self.__prs.write(cfgFile)
+                        self.set(sec,key,self.__prmtr[sec][key])
+            ConfigParser.write(self,cfgFile)
 
             
-    def loadCfg(self,cfg='config.cfg'):
+    def load(self,cfg='config.cfg'):
 
-        self.__prmtr = {}
-        tmpDict = {}
-
-        # TODO: Create folder
+        self.__prmtr = self.__load(cfg)
         
-        self.__prs.read(cfg)
-        for sec in self.__prs.sections():
-            for (key,val) in self.__prs.items(sec):
-                tmpDict[key] = val
-            self.__prmtr[sec] = tmpDict 
+    def __load(self, cfg='config.cfg'):
 
+        if os.path.exists(self.__dir + cfg):
+
+            fullDict = {}
+            
+            print "Found: %s" %(self.__dir + cfg)
+            
+            self.read(self.__dir + cfg)
+            for sec in self.sections():
+                tmpDict = {}
+                for (key,val) in self.items(sec):
+                    tmpDict[key] = val
+                fullDict[sec] = tmpDict                     
+        else:
+            sys.exit("No cfg found!")
+
+        return fullDict
+    
+
+    def update(self, cfg='config.cfg'):
+
+        tmpDict = self.__load(self.__dir + cfg)
+        
             
 if __name__ == '__main__':        
 
@@ -78,6 +107,7 @@ if __name__ == '__main__':
         cfg.init(pDict)        
         cfg.write()
     else:
-        cfg.loadCfg("config.cfg")
+        cfg.load("config.cfg")
         
     print cfg.get("General","path")
+    print cfg.get("Special","d")

@@ -2,7 +2,7 @@
 import os,sys
 from ConfigParser import ConfigParser
 
-class CfgHandler(ConfigParser):
+class ConfigHandler(ConfigParser):
 
     def __init__(self, parDict = None):
         ConfigParser.__init__(self)
@@ -97,7 +97,7 @@ if __name__ == '__main__':
                      'h':8,
                      'i':9}}
 
-    cfg = CfgHandler()
+    cfg = ConfigHandler()
     
     if write:
         cfg.init(pDict)        

@@ -26,7 +26,7 @@ class ConfigHandler(ConfigParser):
 
     def __load(self, cfg='default.cfg'):
 
-        cfg = self.__cfgName(cfg)
+        #cfg = self.__cfgName(cfg)
 
         if os.path.exists(self.__dir + cfg):
             fullDict = {}
@@ -44,10 +44,13 @@ class ConfigHandler(ConfigParser):
         
         return fullDict
 
-    def get(self, sec, par=None):
+    def get(self, sec, par=None, dataType = 'string'):
         if self.__prmtr is not None:
             if par is not None:
-                return self.__prmtr[sec][par]
+                if dataType == ('int' or 'integer'):
+                    return int(self.__prmtr[sec][par])
+                else:
+                    return self.__prmtr[sec][par]
             else:
                 return self.__prmtr[sec]
 
@@ -126,6 +129,14 @@ class ConfigHandler(ConfigParser):
                                     print "dif"
         #TODO compare tmpDict with self.__prmtr
 
+        
+    def setType(self,func):
+      
+        for sec in self.__prmtr:
+            for key in self.__prmtr[sec]:
+                if callable(func):
+                    self.__prmtr[sec][key] = func(self.__prmtr[sec][key])
+        return True
         
 if __name__ == '__main__':        
 

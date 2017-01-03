@@ -47,10 +47,13 @@ class ConfigHandler(ConfigParser):
     def get(self, sec, par=None, dataType = 'string'):
         if self.__prmtr is not None:
             if par is not None:
-                if dataType == ('int' or 'integer'):
-                    return int(self.__prmtr[sec][par])
-                else:
-                    return self.__prmtr[sec][par]
+                try:
+                    if dataType == ('int' or 'integer'):
+                        return int(self.__prmtr[sec][par])
+                    else:
+                        return self.__prmtr[sec][par]
+                except(KeyError):
+                    return 0
             else:
                 return self.__prmtr[sec]
 

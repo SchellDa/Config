@@ -119,7 +119,10 @@ class ConfigHandler(ConfigParser):
         for sec in self.__prmtr:
             for key in self.__prmtr[sec]:
                 if callable(func):
-                    self.__prmtr[sec][key] = func(self.__prmtr[sec][key])
+                    try:
+                        self.__prmtr[sec][key] = func(self.__prmtr[sec][key])
+                    except:
+                        pass
         return True
 
     

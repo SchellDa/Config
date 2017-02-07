@@ -1,174 +1,113 @@
-#!/usb/bin/python
-import os,sys
-from ConfigParser import ConfigParser
+import json
 
-class ConfigHandler(ConfigParser):
+class ConfigHandler(object):
+    """ Class that converts json based config files into dictonaries
 
-    def __init__(self, parDict = None):
-        ConfigParser.__init__(self)
-        self.optionxform = str
+    The ConfigParser class is used to parse JSON based config files. 
+    This small program is mainly used in the context of KITPlot and other
+    scipts developed in the hardware group of the ETP at KIT.
+    
+    """
+    
+    def __init__(self,cfg=None):
+        """ Initialize ConfigHandler by loading the config file.
+        
+        The __init__ method sets the working directory to ./cfg and loads the 
+        config file.
+
+        Args:
+            cfg (str): The config file that is loaded
+
+        """
         self.__dir = "cfg/"
-        self.__prmtr = None     
-        if parDict is not None:
-            self.init(parDict)
-            
-    def __cfgExists(self):
-        return os.path.exists(self.__cfg)
-
-    def __cfgName(self, name='default'):
-
-        if os.path.isdir(name):
-            name = os.path.normpath(name).split("/")[-1] + ".cfg"
-            return name
-        else:
-            name = os.path.splitext(os.path.basename(os.path.normpath(name)))[0] + ".cfg"
-            return name
-
-    def __load(self, cfg='default.cfg'):
-
-        #cfg = self.__cfgName(cfg)
-
-        if os.path.exists(self.__dir + cfg):
-            fullDict = {}
-            
-            self.read(self.__dir + cfg)
-            for sec in self.sections():
-                tmpDict = {}
-                for (key,val) in self.items(sec):
-                    tmpDict[key] = val
-                fullDict[sec] = tmpDict
-            self.__prmtr = fullDict
-
-        else:
-            sys.exit("No cfg found!")
+        if cfg is not None:
+            self.__cfg = self.__load(cfg)
         
-        return fullDict
+    def __load(self,cfg='default.cfg'):
+        with open(self.__dir+cfg) as cfgFile:
+            return json.load(cfgFile)
 
-    def get(self, sec, par=None, dataType = 'string'):
-        if self.__prmtr is not None:
-            if par is not None:
-                try:
-                    if dataType == ('int' or 'integer'):
-                        return int(self.__prmtr[sec][par])
-                    else:
-                        return self.__prmtr[sec][par]
-                except(KeyError):
-                    return 0
-            else:
-                return self.__prmtr[sec]
+    def get(self,sec=None,par=None):      
+        """ Get the value of (par)ameter in the given (sec)tion
 
-    def getDict(self, sec):
-        if self.__prmtr is not None:
-        # TODO Try-Except
-            return self.__prmtr[sec]
-        # sys.exit("Section: %s not defined" %sec)
+        Args:
+            sec (str): Section where the parameter is located.
+            par (str): Parameter
+
+        """
+
+        # Return whole dictionary
+        if sec==None:
+            return self.__cfg
+        # Return one section
+        elif sec!=None and par==None:
+            try:
+                return self.__cfg[sec]
+            except:
+                raise IOError("Section not found!")
+        else:
+            try:
+                return self.__cfg[sec][par]
+            except:
+                raise IOError("Section and/or parameter not found")
+            
+    def setDir(self,directory='cfg/'):
+        """ Set the working directory
+
+        Args:
+            directory (str): Working directory where the config files are 
+                located
         
-    def getParameters(self):
-        return self.__prmtr
-
-    def init(self, fullDict):                    
-        if isinstance(fullDict,dict):
-        #TODO: Check if val of key is dict
-            self.__prmtr = fullDict
-
+        """
+        self.__dir = directory
 
     def load(self,cfg='default.cfg'):
-        self.__prmtr = self.__load(cfg)
+        """ Load config file
 
-    def setDir(self, dirName="cfg/"):
-        self.__dir = dirName
+        Args:
+            cfg (str): Name of cfg file inside the working directory
 
-    def setNoDir(self):
-        self.__dir = ""
-
-    def write(self, cfg='default.cfg', owrite=True):
-        #TODO: Add overwrite part
+        """
+        self.__cfg = self.__load(cfg)
         
-        cfg = self.__cfgName(cfg)
-        
-        if not os.path.isdir(self.__dir):
-            os.makedirs(self.__dir)
-        else:
-            pass
+    def setValue(self,mapList,value):
+        """ Set or change a value of a new or existing parameter
 
+        Args:
+            mapList (dict): Dictionary with unlimited levels
+            value (): Value that will be set 
+
+        """
+        self.__setInDict(self.__cfg,mapList,value)
+        
+    # Get a given data from a dictionary with position provided as a list
+    def __getFromDict(self, dataDict, mapList):    
+        for k in mapList: dataDict = dataDict[k]
+        return dataDict
+    
+    # Set a given data in a dictionary with position provided as a list
+    def __setInDict(self, dataDict, mapList, value): 
+        for k in mapList[:-1]: dataDict = dataDict[k]
+        dataDict[mapList[-1]] = value
+
+    def write(self, cfg='default.cfg'):
         with open(self.__dir + cfg,'w') as cfgFile:
-            if self.__prmtr is not None:
-                for sec in self.__prmtr:
-                    self.add_section(sec)
-                    for key in self.__prmtr[sec]:
-                        self.set(sec,key,self.__prmtr[sec][key])
-            ConfigParser.write(self,cfgFile)
+            json.dump(self.__cfg, cfgFile, indent=4, sort_keys=True)
 
-    def getCfgName(self, name='default'):
-        return self.__cfgName(name)
-
-
-    def setParameter(self, cfg, sec, key, val):
-        
-        self.read(cfg)
-
-        with open(cfg,'w') as cfgFile:
-            self.set(sec, key, val)
-            ConfigParser.write(self,cfgFile)
-
-        return True
-
-
-    def setType(self,func):
-      
-        for sec in self.__prmtr:
-            for key in self.__prmtr[sec]:
-                if callable(func):
-                    try:
-                        self.__prmtr[sec][key] = func(self.__prmtr[sec][key])
-                    except:
-                        pass
-        return True
+    def setDict(self, dictionary):
+        self.__cfg = dictionary 
+            
+if __name__ == '__main__':
 
     
-    def update(self, Input, InputType, refFile='default.cfg'):
+    testDict = { "a": "1",
+                 "b": "2",
+                 "c":
+                 { "d": "3",
+                   "e": "4"}}
 
-        print "###############################################\n"+"### ConfigHandler update method initialized ###\n"+"###############################################"
-
-        if InputType == "File":
-            File = os.path.basename(Input)
-            print "1 File is ready to be updated according to '" + refFile + "': \n" + str(File)
-        elif InputType == "Folder":
-            Folder = Input.split("/")[-2] + "/"
-            print str(len(self.getFilesInFolder(Input, cfg))) + " file(s) are ready to be updated according to '" + refFile + "':"
-            for Name in self.getFilesInFolder(Input, cfg):
-                print Name
-        print os.path.basename(Input)
-        
-        refDict = self.__load(self.__dir + refFile)
-        oldDict = {}
-        config = ConfigParser()
-        config.read(self.__dir + File)
-
-
-    def getFilesInFolder(self, path, cfg):
-
-        List = []
-        for Name in os.listdir(path):
-            if "~" in Name or Name == cfg:
-                pass
-            else:
-                List.append(Name)
-        return List
-        
-        
-        
-if __name__ == '__main__':        
-
-    Input = sys.argv[1]
-    if len(sys.argv) < 2:
-        pass
-    else:
-        refFile = os.path.basename(sys.argv[2])
-        
-        if os.path.isdir(Input):
-            ConfigHandler().update(Input, "Folder", refFile)
-        elif Input[-4:] == ".cfg":
-            ConfigHandler().update(Input, "File", refFile)
-        else:
-            sys.exit("Unkown input type. Only fodlers or cfg-files can be updated!")
+    cfg = ConfigHandler()
+    cfg.setDict(testDict)
+    cfg.write()
+                     
+                 

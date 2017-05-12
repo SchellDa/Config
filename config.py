@@ -1,4 +1,6 @@
+import os
 import json
+import logging
 from collections import OrderedDict
 
 class Config(object):
@@ -23,6 +25,8 @@ class Config(object):
         self.__dir = ""
         self.__fName = ""
         self.__cfg = {}
+
+        self.__setupLogger()
 
         if cfg is not None:
             self.load(cfg)
@@ -51,6 +55,17 @@ class Config(object):
         self.__setInDict(self.__cfg,key,value)
         self.write(self.__fName)
 
+    def __setupLogger(self):
+        self.__log = logging.getLogger(__name__)
+        self.__log.setLevel(logging.DEBUG)
+
+        consoleHandler = logging.StreamHandler()
+        consoleHandler.setLevel(logging.DEBUG)
+
+        consoleFormatter = logging.Formatter('%(levelname)s - %(message)s')
+        consoleHandler.setFormatter(consoleFormatter)
+
+        self.__log.addHandler(consoleHandler)
 
     def setDir(self,directory='cfg/'):
         """ Set the working directory
@@ -64,7 +79,7 @@ class Config(object):
         if directory[-1] is not "/":
             directory+="/"
 
-        self.__dir = directory
+        self.__dir = os.getcwd() + "/" + directory
 
 
     def load(self, cfg='default.cfg'):
@@ -74,18 +89,29 @@ class Config(object):
             cfg (str): Name of cfg file inside the working directory
 
         """
+
         if self.__dir is "":
-            self.__fName = cfg
+            #self.__fName = os.path.dirname(os.path.abspath(__file__)) + "/" + cfg
+            self.__fName = os.getcwd() + "/" + cfg
         else:
             self.__fName = self.getfName(cfg)
 
+        self.__log.debug("Config filepath: {0}".format(self.__fName))
+
         try:
-            with open(self.__dir + self.__fname) as cfgFile:
+            with open(self.__dir + self.__fName) as cfgFile:
                 self.__cfg = json.load(cfgFile, object_pairs_hook=OrderedDict)
         except:
             raise OSError("No file found")
 
     def write(self, cfg='default.cfg'):
+
+        try:
+            if not os.path.exists(self.__dir):
+                os.makedirs(self.__dir)
+        except:
+            pass
+
         with open(self.__dir + cfg, 'w') as cfgFile:
             json.dump(self.__cfg, cfgFile, indent=4, sort_keys=True)
 
